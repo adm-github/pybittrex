@@ -1,9 +1,5 @@
-'''
+"""
 Available API calls (from https://bittrex.com/Home/Api)
-    /market/buylimit
-    /market/selllimit
-    /market/cancel
-    /market/getopenorders
     /account/getbalances
     /account/getbalance
     /account/getdepositaddress
@@ -12,7 +8,7 @@ Available API calls (from https://bittrex.com/Home/Api)
     /account/getorderhistory
     /account/getwithdrawalhistory
     /account/getdeposithistory
-'''
+"""
 import requests
 
 
@@ -24,99 +20,104 @@ class Bittrex():
         self.api_url = 'https://bittrex.com/api/v1.1/'
 
     # Public API calls
-    def getMarkets(self):
-        '''
+    def get_markets(self):
+        """
         Used to get the open and available trading markets
         at Bittrex along with other meta data.
-        '''
+        """
         url = self.api_url + '/public/getmarkets'
         return requests.get(url).text
 
-    def getCurrencies(self):
-        '''
+    def get_currencies(self):
+        """
         Used to get all supported currencies at Bittrex along
         with other meta data.
-        '''
+        """
         url = self.api_url + '/public/getcurrencies'
         return requests.get(url).text
 
-    def getTicker(self, market):
-        '''
+    def get_ticker(self, market):
+        """
         Used to get the current tick values for a market.
-        '''
+        """
         payload = {'market': market}
         url = self.api_url + '/public/getticker'
         return requests.get(url, params=payload).text
 
-    def getMarketSummaries(self):
-        '''
+    def get_market_summaries(self):
+        """
         Used to get the last 24 hour summary of all active exchanges
-        '''
+        """
         url = self.api_url + '/public/getmarketsummaries'
         return requests.get(url).text
 
-    def getMarketSummary(self, market):
-        '''
+    def get_market_summary(self, market):
+        """
         Used to get the last 24 hour summary of all active exchanges
 
-        Parameters
-        market a string literal for the market (ex: BTC-LTC)
-        '''
+        :param market: a string literal for the market (ex: BTC-LTC)
+        :type market: str
+        """
         payload = {'market': market}
         url = self.api_url + '/public/getmarketsummary'
         return requests.get(url, params=payload).text
 
-    def getOrderBook(self, market, type):
-        '''
+    def get_order_book(self, market, type):
+        """
         Used to get retrieve the orderbook for a given market
 
-        Parameters
-        market a string literal for the market (ex: BTC-LTC)
-        type buy, sell or both to identify the type of orderbook to return. 
-        '''
+        :param market: a string literal for the market (ex: BTC-LTC)
+        :type market: str
+        :param type: buy, sell or both to identify the type of orderbook to return.
+        :type type: str
+        """
         payload = {'market': market,
                    'type': type}
         url = self.api_url + '/public/getorderbook'
         return requests.get(url, params=payload).text
 
-    def getMarketHistory(self, market):
-        '''
+    def get_market_history(self, market):
+        """
         Used to retrieve the latest trades that have occured for a specific market.
 
-        Parameters
-        market a string literal for the market (ex: BTC-LTC)
-        '''
+        :param market: a string literal for the market (ex: BTC-LTC)
+        :type market: str
+        """
         payload = {'market': market}
         url = self.api_url + '/public/getmarkethistory'
         return requests.get(url, params=payload).text
 
     # Market API calls
-    def buyLimit(self, market, quantity, rate):
-        '''
+    def buy_limit(self, market, quantity, rate):
+        """
         Used to place a buy order in a specific market.
         Use buylimit to place limit orders.
 
-        Parameters
-        market required a string literal for the market (ex: BTC-LTC)
-        quantity required the amount to purchase
-        rate required the rate at which to place the order.
-        '''
+        :param market: required a string literal for the market (ex: BTC-LTC)
+        :type market: str
+        :param quantity: the amount to purchase
+        :type quantity: float
+        :param rate: required the rate at which to place the order.
+        :type rate: float
+        """
         payload = {'market': market,
                    'quantity': quantity,
                    'rate': rate}
         url = self.api_url + '/market/buylimit'
         return requests.get(url, params=payload).text
 
-    def sellLimit(self, market, quantity, rate):
-        '''
+    def sell_limit(self, market, quantity, rate):
+        """
         Used to place an sell order in a specific market.
         Use selllimit to place limit orders.
 
-        Parameters
-        market required a string literal for the market (ex: BTC-LTC)
-        quantity required the amount to purchase
-        rate required the rate at which to place the order.
-        '''
+        :param market: a string literal for the market (ex: BTC-LTC)
+        :type market: str
+        :param quantity: the amount to purchase
+        :type quantity: float
+        :param rate: the rate at which to place the order.
+        :type rate: float
+        """
         payload = {'market': market,
                    'quantity': quantity,
                    'rate': rate}
@@ -124,21 +125,21 @@ class Bittrex():
         return requests.get(url, params=payload).text
 
     def cancel(self, uuid):
-        '''
+        """
         Used to cancel a buy or sell order.
 
-        Parameters
-        uuid uuid of buy or sell order
-        '''
+        :param uuid: uuid of buy or sell order
+        :type uuid: int
+        """
         payload = {'uuid': uuid}
         url = self.api_url + '/market/cancel'
         return requests.get(url, params=payload).text
 
-    def getOpenOrders(self, market=''):
-        '''
+    def get_open_orders(self, market=''):
+        """
         Get all orders that you currently have opened.
         A specific market can be requested
-        '''
+        """
         payload = {'uuid': market}
         url = self.api_url + '/market/getopenorders'
         return requests.get(url, params=payload).text
@@ -148,4 +149,4 @@ if __name__ == "__main__":
     # Example code
     client = Bittrex(api_key="93c02c8479a643f5900631c2552eb110",
                      api_secret="29e92a092ba34c67b62dc4cb1f793417")
-    print client.getMarketHistory(market='BTC-LTC')
+    print client.get_market_history(market='BTC-LTC')
