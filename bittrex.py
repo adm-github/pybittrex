@@ -1,23 +1,22 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 """
-Available API calls (from https://bittrex.com/Home/Api)
-    /account/getbalances
-    /account/getbalance
-    /account/getdepositaddress
-    /account/withdraw
-    /account/getorder
-    /account/getorderhistory
-    /account/getwithdrawalhistory
-    /account/getdeposithistory
+Available API calls and docs @ https://bittrex.com/Home/Api
 """
+
+import time
+import hashlib
+import hmac
 import requests
 
 
-class Bittrex():
+class Bittrex(object):
     def __init__(self, api_key, api_secret, api_version='v1.1'):
         self.api_key = api_key
         self.api_secret = api_secret
         self.api_version = api_version
-        self.api_url = 'https://bittrex.com/api/v1.1/'
+        self.api_url = 'https://bittrex.com/api/{}'.format(api_version)
 
     # Public API calls
     def get_markets(self):
@@ -100,11 +99,14 @@ class Bittrex():
         :param rate: required the rate at which to place the order.
         :type rate: float
         """
-        payload = {'market': market,
+        payload = {'apiKey': self.api_key,
+                   'nonce': time.time(),
+                   'market': market,
                    'quantity': quantity,
                    'rate': rate}
         url = self.api_url + '/market/buylimit'
-        return requests.get(url, params=payload).text
+        signed_uri = self._get_signed_request(url, payload)
+        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
 
     def sell_limit(self, market, quantity, rate):
         """
@@ -118,11 +120,14 @@ class Bittrex():
         :param rate: the rate at which to place the order.
         :type rate: float
         """
-        payload = {'market': market,
+        payload = {'apiKey': self.api_key,
+                   'nonce': time.time(),
+                   'market': market,
                    'quantity': quantity,
                    'rate': rate}
         url = self.api_url + '/market/selllimit'
-        return requests.get(url, params=payload).text
+        signed_uri = self._get_signed_request(url, payload)
+        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
 
     def cancel(self, uuid):
         """
@@ -131,22 +136,32 @@ class Bittrex():
         :param uuid: uuid of buy or sell order
         :type uuid: int
         """
-        payload = {'uuid': uuid}
+        payload = {'apiKey': self.api_key,
+                   'nonce': time.time(),
+                   'uuid': uuid}
         url = self.api_url + '/market/cancel'
-        return requests.get(url, params=payload).text
+        signed_uri = self._get_signed_request(url, payload)
+        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
 
     def get_open_orders(self, market=''):
         """
         Get all orders that you currently have opened.
         A specific market can be requested
         """
-        payload = {'uuid': market}
-        url = self.api_url + '/market/getopenorders'
-        return requests.get(url, params=payload).text
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time())}
+        url = self.api_url + '/market/getopenorders/'
+        signed_uri = self._get_signed_request(url, payload)
+        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
+
+    def _get_signed_request(self, url, payload=None):
+        params = "&".join(["{}={}".format(k, v) for k, v in payload.items()])
+        uri = "{}?{}".format(url, params)
+        return hmac.new(self.api_secret, uri, hashlib.sha512).hexdigest()
 
 
 if __name__ == "__main__":
     # Example code
-    client = Bittrex(api_key="93c02c8479a643f5900631c2552eb110",
-                     api_secret="29e92a092ba34c67b62dc4cb1f793417")
-    print client.get_market_history(market='BTC-LTC')
+    client = Bittrex(api_key="3dce0c8af9414201846e0e0b9698e7e0",
+                     api_secret="f759bc7edbf946e799ae88a66ede61f0")
+    print client.get_open_orders(market='BTC-LTC')
