@@ -1,0 +1,2 @@
+# pybittrex
+Bittrex API wrapper
