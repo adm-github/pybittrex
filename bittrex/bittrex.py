@@ -11,6 +11,10 @@ import hmac
 import requests
 
 
+class FailedAPIRequest(Exception):
+    pass
+
+
 class Bittrex(object):
     def __init__(self, api_key, api_secret, api_version='v1.1'):
         self.api_key = api_key
@@ -100,13 +104,12 @@ class Bittrex(object):
         :type rate: float
         """
         payload = {'apiKey': self.api_key,
-                   'nonce': time.time(),
+                   'nonce': int(time.time()),
                    'market': market,
                    'quantity': quantity,
                    'rate': rate}
         url = self.api_url + '/market/buylimit'
-        signed_uri = self._get_signed_request(url, payload)
-        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
+        return self._send_signed_request(url, payload)
 
     def sell_limit(self, market, quantity, rate):
         """
@@ -121,13 +124,12 @@ class Bittrex(object):
         :type rate: float
         """
         payload = {'apiKey': self.api_key,
-                   'nonce': time.time(),
+                   'nonce': int(time.time()),
                    'market': market,
                    'quantity': quantity,
                    'rate': rate}
         url = self.api_url + '/market/selllimit'
-        signed_uri = self._get_signed_request(url, payload)
-        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
+        return self._send_signed_request(url, payload)
 
     def cancel(self, uuid):
         """
@@ -137,11 +139,10 @@ class Bittrex(object):
         :type uuid: int
         """
         payload = {'apiKey': self.api_key,
-                   'nonce': time.time(),
+                   'nonce': int(time.time()),
                    'uuid': uuid}
         url = self.api_url + '/market/cancel'
-        signed_uri = self._get_signed_request(url, payload)
-        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
+        return self._send_signed_request(url, payload)
 
     def get_open_orders(self, market=''):
         """
@@ -151,17 +152,128 @@ class Bittrex(object):
         payload = {'apiKey': self.api_key,
                    'nonce': int(time.time())}
         url = self.api_url + '/market/getopenorders/'
-        signed_uri = self._get_signed_request(url, payload)
-        return requests.get(url, params=payload, headers={'apisign': signed_uri}).text
+        return self._send_signed_request(url, payload)
 
-    def _get_signed_request(self, url, payload=None):
+    # Account API calls
+    def get_balances(self):
+        """
+        Used to retrieve all balances from your account
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time())}
+        url = self.api_url + '/account/getbalances/'
+        return self._send_signed_request(url, payload)
+
+    def get_balance(self, currency):
+        """
+        Used to retrieve the balance from your account for a specific currency.
+        :param currency: a string literal for the currency (ex: LTC)
+        :type currency: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'currency': currency}
+        url = self.api_url + '/account/getbalance/'
+        return self._send_signed_request(url, payload)
+
+    def get_deposit_address(self, currency):
+        """
+        Used to retrieve or generate an address for a specific currency.
+        If one does not exist, the call will fail and return ADDRESS_GENERATING until one is available.
+
+        :param currency: a string literal for the currency (ex: BTC)
+        :type currency: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'currency': currency}
+        url = self.api_url + '/account/getdepositaddress/'
+        return self._send_signed_request(url, payload)
+
+    def get_order(self, uuid):
+        """
+        Used to retrieve a single order by uuid.
+
+        :param uuid: the uuid of the buy or sell order
+        :type uuid: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'uuid': uuid}
+        url = self.api_url + '/account/getorder/'
+        return self._send_signed_request(url, payload)
+
+    def withdraw(self, currency, quantity, address, payment_id):
+        """
+        Used to withdraw funds from your account. note: please account for txfee.
+
+        :param currency: a string literal for the currency (ie. BTC)
+        :type currency: str
+        :param quantity: the quantity of coins to withdraw
+        :type quantity: float
+        :param address: the address where to send the funds.
+        :type address: str
+        :param paymentID: used for CryptoNotes/BitShareX/Nxt optional field (memo/paymentid)
+        :type paymentID: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'currency': currency,
+                   'quantity': quantity,
+                   'address': address,
+                   'paymentID': payment_id}
+        url = self.api_url + '/account/withdraw/'
+        return self._send_signed_request(url, payload)
+
+    def get_order_history(self, market=''):
+        """
+        Used to retrieve your order history.
+        :param market: a string literal for the market (e.g. BTC-LTC). If omitted, will return for all markets
+        :type market: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'market': market}
+        url = self.api_url + '/account/getorderhistory/'
+        return self._send_signed_request(url, payload)
+
+    def get_withdrawal_history(self, currency=''):
+        """
+        Used to retrieve your order history.
+        :param currency: a string literal for the currency (ie. BTC). If omitted, will return for all currencies
+        :type currency: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time()),
+                   'currency': currency}
+        url = self.api_url + '/account/getwithdrawalhistory/'
+        return self._send_signed_request(url, payload)
+
+    def get_deposit_history(self, currency=None):
+        """
+        Used to retrieve your deposity history.
+        :param currency: a string literal for the currency (ie. BTC). If omitted, will return for all currencies
+        :type currency: str
+        """
+        payload = {'apiKey': self.api_key,
+                   'nonce': int(time.time())}
+
+        if currency:
+            payload['currency'] = currency
+
+        url = self.api_url + '/account/getdeposithistory/'
+        return self._send_signed_request(url, payload)
+
+    def _send_signed_request(self, url, payload):
+        signed_uri = self._get_signed_uri(url, payload)
+        response = requests.get(url, params=payload, headers={'apisign': signed_uri}).json()
+        if response['success']:
+            return response['result']
+
+        print("Error performing request to {}: {} - {}".format(url, response['success'], response['message']))
+        raise FailedAPIRequest
+
+    def _get_signed_uri(self, url, payload=None):
         params = "&".join(["{}={}".format(k, v) for k, v in payload.items()])
         uri = "{}?{}".format(url, params)
         return hmac.new(self.api_secret, uri, hashlib.sha512).hexdigest()
-
-
-if __name__ == "__main__":
-    # Example code
-    client = Bittrex(api_key="3dce0c8af9414201846e0e0b9698e7e0",
-                     api_secret="f759bc7edbf946e799ae88a66ede61f0")
-    print client.get_open_orders(market='BTC-LTC')
