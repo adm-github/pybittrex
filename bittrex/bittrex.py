@@ -63,7 +63,7 @@ class Bittrex(object):
         """
         payload = {'market': market}
         url = self.api_url + '/public/getmarketsummary'
-        return requests.get(url, params=payload).text
+        return self._send_request(url, payload=payload)
 
     def get_order_book(self, market, type):
         """
@@ -77,7 +77,7 @@ class Bittrex(object):
         payload = {'market': market,
                    'type': type}
         url = self.api_url + '/public/getorderbook'
-        return requests.get(url, params=payload).text
+        return self._send_request(url, payload=payload)
 
     def get_market_history(self, market):
         """
@@ -88,7 +88,7 @@ class Bittrex(object):
         """
         payload = {'market': market}
         url = self.api_url + '/public/getmarkethistory'
-        return requests.get(url, params=payload).text
+        return self._send_request(url, payload=payload)
 
     # Market API calls
     def buy_limit(self, market, quantity, rate):
@@ -264,14 +264,19 @@ class Bittrex(object):
         url = self.api_url + '/account/getdeposithistory/'
         return self._send_signed_request(url, payload)
 
-    def _send_signed_request(self, url, payload):
-        signed_uri = self._get_signed_uri(url, payload)
+    @staticmethod
+    def _send_request(url, payload, signed_uri=""):
         response = requests.get(url, params=payload, headers={'apisign': signed_uri}).json()
+
         if response['success']:
             return response['result']
 
         print("Error performing request to {}: {} - {}".format(url, response['success'], response['message']))
         raise FailedAPIRequest
+
+    def _send_signed_request(self, url, payload):
+        signed_uri = self._get_signed_uri(url, payload)
+        return self._send_request(url, signed_uri, payload)
 
     def _get_signed_uri(self, url, payload=None):
         params = "&".join(["{}={}".format(k, v) for k, v in payload.items()])
